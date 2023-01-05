@@ -49,14 +49,16 @@ library("data.table")
 doy = 3
 a = 1.8
 b = -0.008
-RG = 25.36
-Ta = 22.67
-ET0=5.56
+RG = 28.4
+Ta = 18.6
+ET0=6.45
 
-setwd("C:/Users/Pablo Diaz/Desktop/Procesamiento_R")
+setwd("C:/Users/Pablo Diaz/Desktop/Pablo/FIA/Etapa 3/Cherry Sweet/Procesamiento R")
+
+
 dir <- list.files(pattern = "T19HBB",full.names = T)
 names(dir)<- c("B2", "B3", "B4", "B8")
-mask_utm<-readOGR(file.choose()) 
+mask_utm<-shapefile("Mask_UTM.shp") 
 Sentinel2 <- stack(dir)
 
 names(Sentinel2)<- c("B2", "B3", "B4", "B8")
@@ -234,63 +236,45 @@ plot(LE_MJ)
 plot(G_MJ)
 plot(H_MJ)
 
-Equipo_2010<-readOGR(file.choose()) 
-Sector<-c("1","1", "2","2","3","4","4","5","5","6")
-Equipo_2010<-cbind(Equipo_2010, Sector)
-names(Equipo_2010)<-c("Sub_Unidad", "LAYER", "KML_STYLE", "tessellate", "Sector", "geometry")
-Equipo_2010<-st_as_sf(Equipo_2010)
+#Estadísticas por sector
 
-st_crs(Equipo_2010)<-st_crs(kc)
-
-ggplot() + geom_sf(data=Equipo_2010, aes(fill=Sector), alpha=0.5)
+Equipo_riego <- st_read("Equipos_Cherry_Sweet.shp")
+Equipo_riego <-st_as_sf(Equipo_riego)
+Riego <- read.xlsx("Riego.xlsx")
 
 
-kc1<-kc %>% as("SpatialPixelsDataFrame") %>% as.data.frame()
-LE1<-LE %>% as("SpatialPixelsDataFrame") %>% as.data.frame()
-ET1<-ET %>% as("SpatialPixelsDataFrame") %>% as.data.frame()
+SectorA<-c("1","1","2","2","3","4","4","5","5","6", "7")
+SectorB<-c("1","1","1","2","2","3","3","4","4","5","6","6")
+SectorC<-c("1","1","2","2","2","3","3","3","4","4","4","5", "5", "5")
 
-ggplot() + geom_tile(data=kc1, aes(x=x, y=y, fill=layer))
+Sector<-c(SectorA, SectorB, SectorC)
 
-plot_kc<-ggplot() + geom_tile(data=kc1, aes(x=x, y=y, fill=layer))+
-  scale_fill_gradientn(colours= rev(terrain.colors(100)), name="Kc")+
-  geom_sf(data=Equipo_2010, aes(color=Sector), alpha=0, size=1.5)
+Equipos<-cbind(Equipo_riego, Sector)
 
-plot_LE<-ggplot() + geom_tile(data=kc1, aes(x=x, y=y, fill=layer))+
-  scale_fill_gradientn(colours= rev(terrain.colors(100)), name="LE")+
-  geom_sf(data=Equipo_2010, aes(color=Sector), alpha=0, size=1.5)
+names(Equipos)<-c("Sub_Unidad", "LAYER", "KML_STYLE", "Equipo", "tessellate", "Sector", "geometry")
 
-plot_ET<-ggplot() + geom_tile(data=kc1, aes(x=x, y=y, fill=layer))+
-  scale_fill_gradientn(colours= rev(terrain.colors(100)), name="ET") +
-  geom_sf(data=Equipo_2010, aes(color=Sector), alpha=0, size=1.5)
+st_crs(Equipos)<-st_crs(kc)
 
 
 Data<-stack(NDVI, kc, ET, LE_MJ, H_MJ, G_MJ)
 names(Data)<-c("ndvi", "kc", "ET", "LE","H", "G")
 plot(Data[[2]])
-vles_mean<-raster::extract(Data, Equipo_2010, fun=mean, na.rm= TRUE, df=TRUE)
-vles_max<-raster::extract(Data, Equipo_2010, fun=max, na.rm= TRUE, df=TRUE)
-vles_min<-raster::extract(Data, Equipo_2010, fun=min, na.rm= TRUE, df=TRUE)
-vles<-cbind(Equipo_2010,vles_mean)
-head(vles)
+vles_mean<-raster::extract(Data, Equipos, fun=mean, na.rm= TRUE, df=TRUE)
+vles_max<-raster::extract(Data, Equipos, fun=max, na.rm= TRUE, df=TRUE)
+vles_min<-raster::extract(Data, Equipos, fun=min, na.rm= TRUE, df=TRUE)
+vles<-cbind(Equipos,vles_mean)
 
-sector_riego<-ggplot() + geom_sf(data=Equipo_2010, aes(fill=Sector), alpha=0.5)
-ndvi_sector<-ggplot() + geom_sf(data=vles, aes(fill=ndvi))
-kc_sector<-ggplot()+ geom_sf(data=vles, aes(fill=kc))
-ET_sector<-ggplot() + geom_sf(data=vles, aes(fill=ET))
+Riego<-Riego %>% dplyr::select(Sub_Unidad, Plantas,Ha, PP, HR)
 
-Resumen<-(sector_riego|ndvi_sector)/(kc_sector|ET_sector)
-Resumen
-
-Riego<-read.xlsx("Riego.xlsx")
 class(Riego)
 
-vles1<-cbind(vles, Riego)
-vles2<-as.data.table(vles1)
-vles2<-vles2[,.(KC=max(kc), ETc=max(ET), pp=mean(PP)), by=Sector]
-vles2<-vles2[ , horas := (ETc/0.9/pp) ]
-vles2<-vles2[, FR := pp*5/(ETc/0.9)]
-vles3<-as.data.table(vles1)
-vles3<-vles3[ ,.(kc, ET, PP), by=.(Sector, Sub_Unidad) ]
-vles3<-vles3[ , hh := (ET/0.9/PP) ]
-vles3
+vles<-merge(vles, Riego)
+
+
+
+FINAL<-vles %>% group_by(Equipo, Sector) %>% summarise (
+  ndvi=mean(ndvi), Kc=mean(kc), ET= mean(ET), pp=mean(PP)) %>%
+  dplyr::mutate (HR=ET/0.85/pp) %>%
+  dplyr::select(Equipo, Sector, ndvi, Kc, ET, pp, HR, geometry)
+
 
