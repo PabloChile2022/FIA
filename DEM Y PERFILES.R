@@ -1,9 +1,19 @@
 pacman::p_load(sf, terra, ggplot2, geosphere, tidyverse, openxlsx, tidyterra,ggspatial, tmap)
 
-###El último proyecto, fue con un EPSG:32718
+###El último proyecto, fue con un EPSG:32719
+#Rutina exige crear directorio de trabajo previo en la secuencia año/Mes/Nombre Proyecto/Shape o Raster o producto
 
-Perfil<-vect("C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Perfiles.shp")
-DEM<-rast("C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/DEM.tif")
+setwd("C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/")
+
+YY<-"2024" #Define Año en el directorio
+Mes<-"Octubre" #Define el mes de trabajo en la carpeta directorio
+Nombre<-"Aquist" #Define el nombre del proyecto
+
+ruta_perfil <- file.path(YY, Mes, Nombre, "SHAPE", "Perfiles.shp")
+ruta_DEM<-file.path(YY, Mes, Nombre, "Raster", "DEM.tif")
+
+Perfil<-vect(ruta_perfil)
+DEM<-rast(ruta_DEM)
 crs(DEM)<-"epsg:32719"
 crs(Perfil)<-"epsg:32719"
 Perfil<-sf::st_as_sf(Perfil, crs=st_crs(32719)) %>% arrange(Name)
@@ -11,7 +21,7 @@ Perfil1<-Perfil[1,]
 Perfil2<-Perfil[2,]
 Perfil3<-Perfil[3,]
 Perfil4<-Perfil[4,]
-Perfil5<-Perfil[5,]
+#Perfil5<-Perfil[5,]
 
 # Función para generar puntos muestreados y extraer coordenadas y elevaciones
 generar_puntos_muestreados <- function(Perfil, rev = FALSE, N_ESTACAS = 60, DEM, mod_id = 10) {
@@ -61,40 +71,40 @@ generar_puntos_muestreados <- function(Perfil, rev = FALSE, N_ESTACAS = 60, DEM,
 }
 
 Perfil1 <- generar_puntos_muestreados(Perfil1, rev = FALSE, N_ESTACAS = 60, DEM, mod_id = 10)
-Perfil2 <- generar_puntos_muestreados(Perfil2, rev = FALSE, N_ESTACAS = 60, DEM, mod_id = 10)
-Perfil3 <- generar_puntos_muestreados(Perfil3, rev = TRUE, N_ESTACAS = 58, DEM, mod_id = 10)
-Perfil4 <- generar_puntos_muestreados(Perfil4, rev = TRUE, N_ESTACAS = 59, DEM, mod_id = 10)
-Perfil5 <- generar_puntos_muestreados(Perfil5, rev = FALSE, N_ESTACAS = 60, DEM, mod_id = 10)
+Perfil2 <- generar_puntos_muestreados(Perfil2, rev = TRUE, N_ESTACAS = 40, DEM, mod_id = 10)
+Perfil3 <- generar_puntos_muestreados(Perfil3, rev = FALSE, N_ESTACAS = 34, DEM, mod_id = 10)
+Perfil4 <- generar_puntos_muestreados(Perfil4, rev = FALSE, N_ESTACAS = 60, DEM, mod_id = 10)
+#Perfil5 <- generar_puntos_muestreados(Perfil5, rev = FALSE, N_ESTACAS = 60, DEM, mod_id = 10)
 
 Coord_P1<-Perfil1[[1]]
 Coord_P2<-Perfil2[[1]]
 Coord_P3<-Perfil3[[1]]
 Coord_P4<-Perfil4[[1]]
-Coord_P5<-Perfil5[[1]]
+#Coord_P5<-Perfil5[[1]]
 
 puntos_muestreados1<-Perfil1[[2]]
 puntos_muestreados2<-Perfil2[[2]]
 puntos_muestreados3<-Perfil3[[2]]
 puntos_muestreados4<-Perfil4[[2]]
-puntos_muestreados5<-Perfil5[[2]]
+#puntos_muestreados5<-Perfil5[[2]]
 
 PLOT_P1<-Perfil1[[3]]
 PLOT_P2<-Perfil2[[3]]
 PLOT_P3<-Perfil3[[3]]
 PLOT_P4<-Perfil4[[3]]
-PLOT_P5<-Perfil5[[3]]
+#PLOT_P5<-Perfil5[[3]]
 
 P1<-st_transform(sf::st_as_sf(puntos_muestreados1, crs=st_crs(32719)), crs= "+init=EPSG:4326") %>% st_coordinates()
 P2<-st_transform(sf::st_as_sf(puntos_muestreados2, crs=st_crs(32719)), crs= "+init=EPSG:4326") %>% st_coordinates()
 P3<-st_transform(sf::st_as_sf(puntos_muestreados3, crs=st_crs(32719)), crs= "+init=EPSG:4326") %>% st_coordinates()
 P4<-st_transform(sf::st_as_sf(puntos_muestreados4, crs=st_crs(32719)), crs= "+init=EPSG:4326") %>% st_coordinates()
-P5<-st_transform(sf::st_as_sf(puntos_muestreados5, crs=st_crs(32719)), crs= "+init=EPSG:4326") %>% st_coordinates()
+#P5<-st_transform(sf::st_as_sf(puntos_muestreados5, crs=st_crs(32719)), crs= "+init=EPSG:4326") %>% st_coordinates()
 
 dist1<-head(c(0,geosphere::distGeo(P1)),-1)
 dist2<-head(c(0,geosphere::distGeo(P2)),-1)
 dist3<-head(c(0,geosphere::distGeo(P3)),-1)
 dist4<-head(c(0,geosphere::distGeo(P4)),-1)
-dist5<-head(c(0,geosphere::distGeo(P5)),-1)
+#dist5<-head(c(0,geosphere::distGeo(P5)),-1)
 
 
 tmap_mode("view")
@@ -107,21 +117,40 @@ tm_basemap("Esri.WorldImagery")+
   tm_shape(puntos_muestreados3)+
   tm_dots(shape = 24, col = "purple", size = 0.5, fill="purple")+
   tm_shape(puntos_muestreados4)+
-  tm_dots(shape = 24, col = "blue", size = 0.5, fill="blue")+
-  tm_shape(puntos_muestreados5)+
-  tm_dots(shape = 24, col = "orange", size = 0.5, fill="orange")
+  tm_dots(shape = 24, col = "blue", size = 0.5, fill="blue")
+  
+  #tm_shape(puntos_muestreados5)+
+  #tm_dots(shape = 24, col = "orange", size = 0.5, fill="orange")
 
-write.table(Coord_P1 %>% mutate(Distancia=dist1), file = "C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Perfil1.txt", sep = ",", quote = FALSE, row.names = FALSE)
-write.table(Coord_P2 %>% mutate(Distancia=dist2), file = "C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Perfil2.txt", sep = ",", quote = FALSE, row.names = FALSE)
-write.table(Coord_P3 %>% mutate(Distancia=dist3), file = "C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Perfil3.txt", sep = ",", quote = FALSE, row.names = FALSE)
-write.table(Coord_P4 %>% mutate(Distancia=dist4), file = "C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Perfil4.txt", sep = ",", quote = FALSE, row.names = FALSE)
-write.table(Coord_P5 %>% mutate(Distancia=dist5), file = "C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Perfil5.txt", sep = ",", quote = FALSE, row.names = FALSE)
 
-writeVector(PLOT_P1,"C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Puntos1.shp", overwrite=TRUE)
-writeVector(PLOT_P2,"C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Puntos2.shp", overwrite=TRUE)
-writeVector(PLOT_P3,"C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Puntos3.shp", overwrite=TRUE)
-writeVector(PLOT_P4,"C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Puntos4.shp", overwrite=TRUE)
-writeVector(PLOT_P5,"C:/Users/Pablo/Desktop/Pablo/FIA/Pozos/2024/Sembrador Capital/Pan de Azucar/Puntos5.shp", overwrite=TRUE)
+
+#Producto
+
+Perfil1_txt<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Perfil1.txt")
+Perfil2_txt<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Perfil2.txt")
+Perfil3_txt<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Perfil3.txt")
+Perfil4_txt<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Perfil4.txt")
+Perfil5_txt<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Perfil5.txt")
+
+write.table(Coord_P1 %>% mutate(Distancia=dist1), file = Perfil1_txt, sep = ",", quote = FALSE, row.names = FALSE)
+write.table(Coord_P2 %>% mutate(Distancia=dist2), file = Perfil2_txt, sep = ",", quote = FALSE, row.names = FALSE)
+write.table(Coord_P3 %>% mutate(Distancia=dist3), file = Perfil3_txt, sep = ",", quote = FALSE, row.names = FALSE)
+write.table(Coord_P4 %>% mutate(Distancia=dist4), file = Perfil4_txt, sep = ",", quote = FALSE, row.names = FALSE)
+#write.table(Coord_P5 %>% mutate(Distancia=dist5), file = Perfil5_txt, sep = ",", quote = FALSE, row.names = FALSE)
+
+#Producto
+
+Puntos1<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Puntos1.shp")
+Puntos2<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Puntos2.shp")
+Puntos3<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Puntos3.shp")
+Puntos4<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Puntos4.shp")
+#Puntos5<-file.path(YY, Mes, Nombre, "PRODUCTOS", "Puntos5.shp")
+
+writeVector(PLOT_P1,Puntos1, overwrite=TRUE)
+writeVector(PLOT_P2,Puntos2, overwrite=TRUE)
+writeVector(PLOT_P3,Puntos3, overwrite=TRUE)
+writeVector(PLOT_P4,Puntos4, overwrite=TRUE)
+#writeVector(PLOT_P5,Puntos5, overwrite=TRUE)
 
 
 ##Ubicación_region
@@ -163,7 +192,7 @@ Puntos<-st_as_sf(Puntos)
 Puntos<-Puntos[,-c(2:11)]
 colnames(Puntos)<-c("id", "geometry")
 
-Vect<-c("Cuncumén", "L1 y L2", "L3 y L4")
+Vect<-c("Cuncumén", "La Floresta", "Los Escalones")
 Puntos$id<-Vect
 
 Cuncumén<-Puntos %>% filter(id=="Cuncumén")
@@ -198,17 +227,17 @@ Ubica<-tm_shape(Mapa_Comuna %>% filter(Comuna=="San Antonio")) +
               title = "Comuna")+  
   tm_grid(lines = TRUE, labels.size = 1.5,labels.fontface = "bold", crs = "epsg:32719") +  # Agregar grilla en UTM
   tm_shape(Cuncumén)+
-  tm_dots(shape = 24, col = "red", size = 1, fill="red") +
-  tm_text("id", size = 2, col ="black", ymod = 1,xmod=0, fontface = "bold", NA.show = FALSE)+  # Mostrar texto
+  tm_dots(shape = 24, col = "red", size = 0.5, fill="red") +
+  tm_text("id", size = 1.5, col ="black", ymod = 0.6,xmod=-1, fontface = "bold", NA.show = FALSE)+  # Mostrar texto
   tm_shape(Proyecto)+
-  tm_dots(shape = 24, col = "red", size = 1, fill="red") +
-  tm_text("id", size = 2, col ="black", ymod = 1,xmod=0, fontface = "bold", NA.show = FALSE)+  # Mostrar texto
+  tm_dots(shape = 24, col = "red", size = 0.5, fill="red") +
+  tm_text("id", size = 1.5, col ="black", ymod = 0.6,xmod=-2, fontface = "bold", NA.show = FALSE)+  # Mostrar texto
   tm_layout(legend.position = c("left", "bottom"),
-            legend.title.size = 2,  # Ajustar el tamaño del título
+            legend.title.size = 1,  # Ajustar el tamaño del título
             legend.title.color = "black",  # Cambiar el color del título de la leyenda a blanco
             legend.title.fontface = "bold",
             legend.text.color = "black",
-            legend.text.size = 2,
+            legend.text.size = 1,
             legend.text.fontface = "bold",
             axis.x.show = FALSE)
 
